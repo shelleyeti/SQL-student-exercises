@@ -62,44 +62,45 @@ namespace StudentExercises.Controllers
         }
 
 
-        //[HttpGet("{id}", Name = "GetCoffee")]
-        //public ActionResult<Coffee> Get([FromRoute] int id)
-        //{
-        //    using (SqlConnection conn = Connection)
-        //    {
-        //        conn.Open();
-        //        using (SqlCommand cmd = conn.CreateCommand())
-        //        {
-        //            cmd.CommandText = @"
-        //                        SELECT
-        //                            Id, Title, BeanType
-        //                        FROM Coffee
-        //                        WHERE Id = @id";
-        //            cmd.Parameters.Add(new SqlParameter("@id", id));
-        //            SqlDataReader reader = cmd.ExecuteReader();
+        [HttpGet("{id}", Name = "GetStudent")]
+        public ActionResult<Student> Get([FromRoute] int id)
+        {
+            using (SqlConnection conn = Connection)
+            {
+                conn.Open();
+                using (SqlCommand cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = @"
+                                SELECT
+                                    Id, FirstName, LastName, SlackHandle
+                                FROM Student
+                                WHERE Id = @id";
+                    cmd.Parameters.Add(new SqlParameter("@id", id));
+                    SqlDataReader reader = cmd.ExecuteReader();
 
-        //            Coffee coffee = null;
+                    Student student = null;
 
-        //            if (reader.Read())
-        //            {
-        //                coffee = new Coffee
-        //                {
-        //                    Id = reader.GetInt32(reader.GetOrdinal("Id")),
-        //                    Title = reader.GetString(reader.GetOrdinal("Title")),
-        //                    BeanType = reader.GetString(reader.GetOrdinal("BeanType"))
-        //                };
-        //            }
-        //            else /*if (coffee == null)*/
-        //            {
-        //                return NotFound($"Coffee with the id {id} was not found :(");
-        //            }
+                    if (reader.Read())
+                    {
+                        student = new Student
+                        {
+                            Id = reader.GetInt32(reader.GetOrdinal("Id")),
+                            FirstName = reader.GetString(reader.GetOrdinal("FirstName")),
+                            LastName = reader.GetString(reader.GetOrdinal("LastName")),
+                            SlackHandle = reader.GetString(reader.GetOrdinal("SlackHandle")),
+                        };
+                    }
+                    else /*if (student == null)*/
+                    {
+                        return NotFound($"Student with the id {id} was not found :(");
+                    }
 
-        //            reader.Close();
+                    reader.Close();
 
-        //            return Ok(coffee);
-        //        }
-        //    }
-        //}
+                    return Ok(student);
+                }
+            }
+        }
 
 
         //[HttpPost]
