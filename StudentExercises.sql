@@ -172,3 +172,63 @@ IF (NOT EXISTS (SELECT TOP 1 1
 BEGIN
 INSERT INTO StudentExercises (ExerciseId, StudentId) VALUES (2, 2)
 END
+
+-- tie instructors to cohorts
+
+IF (NOT EXISTS (SELECT TOP 1 1
+                        FROM CohortInstructors
+                        WHERE CohortId = 2 AND InstructorId = 1))
+BEGIN
+INSERT INTO CohortInstructors (CohortId, InstructorId) VALUES (1, 1)
+END
+
+IF (NOT EXISTS (SELECT TOP 1 1
+                        FROM CohortInstructors
+                        WHERE CohortId = 2 AND InstructorId = 2))
+BEGIN
+INSERT INTO CohortInstructors (CohortId, InstructorId) VALUES (1, 2)
+END
+
+IF (NOT EXISTS (SELECT TOP 1 1
+                        FROM CohortInstructors
+                        WHERE CohortId = 2 AND InstructorId = 3))
+BEGIN
+INSERT INTO CohortInstructors (CohortId, InstructorId) VALUES (1, 3)
+END
+
+-- tie students to cohorts
+
+IF (NOT EXISTS (SELECT TOP 1 1
+                        FROM CohortStudents
+                        WHERE CohortId = 2 AND StudentId = 1))
+BEGIN
+INSERT INTO CohortStudents (CohortId, StudentId) VALUES (1, 1)
+END
+
+IF (NOT EXISTS (SELECT TOP 1 1
+                        FROM CohortStudents
+                        WHERE CohortId = 2 AND StudentId = 2))
+BEGIN
+INSERT INTO CohortStudents (CohortId, StudentId) VALUES (1, 2)
+END
+
+IF (NOT EXISTS (SELECT TOP 1 1
+                        FROM CohortStudents
+                        WHERE CohortId = 2 AND StudentId = 3))
+BEGIN
+INSERT INTO CohortStudents (CohortId, StudentId) VALUES (1, 3)
+END
+
+IF (NOT EXISTS (SELECT TOP 1 1
+                        FROM CohortStudents
+                        WHERE CohortId = 2 AND StudentId = 4))
+BEGIN
+INSERT INTO CohortStudents (CohortId, StudentId) VALUES (1, 4)
+END
+
+IF (NOT EXISTS (SELECT TOP 1 1
+                        FROM CohortStudents
+                        WHERE CohortId = 2 AND StudentId = 5))
+BEGIN
+INSERT INTO CohortStudents (CohortId, StudentId) VALUES (1, 5)
+END
