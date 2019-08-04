@@ -16,7 +16,7 @@ namespace StudentExercises.Models
         public Cohort cohort
         {
             get { return _cohort; }
-            set { _cohort = value;  }
+            set { _cohort = value; }
         }
     }
 }

@@ -5,6 +5,7 @@ using Microsoft.Extensions.Configuration;
 using System.Data.SqlClient;
 using Microsoft.AspNetCore.Http;
 using StudentExercises.Models;
+using StudentExercises.Data;
 
 namespace StudentExercises.Controllers
 {
@@ -30,73 +31,24 @@ namespace StudentExercises.Controllers
         [HttpGet]
         public ActionResult<List<Student>> Get()
         {
-            using (SqlConnection conn = Connection)
-            {
-                conn.Open();
-                using (SqlCommand cmd = conn.CreateCommand())
-                {
-                    cmd.CommandText = "SELECT Id, FirstName, LastName, SlackHandle FROM Student";
-                    SqlDataReader reader = cmd.ExecuteReader();
-                    List<Student> students = new List<Student>();
+            var students = new Repository(_config).GetAllStudent();
 
-                    while (reader.Read())
-                    {
-                        var student = new Student
-                        {
-                            Id = reader.GetInt32(reader.GetOrdinal("Id")),
-                            FirstName = reader.GetString(reader.GetOrdinal("FirstName")),
-                            LastName = reader.GetString(reader.GetOrdinal("LastName")),
-                            SlackHandle = reader.GetString(reader.GetOrdinal("SlackHandle")),
-
-                        };
-
-                        students.Add(student);
-                    }
-                    reader.Close();
-
-                    return Ok(students);
-                }
-            }
+            return Ok(students);     
         }
 
 
         [HttpGet("{id}", Name = "GetStudent")]
         public ActionResult<Student> Get([FromRoute] int id)
         {
-            using (SqlConnection conn = Connection)
+            var student = new Repository(_config).GetOneStudent(id);
+
+            if (student.Id > 0 )
             {
-                conn.Open();
-                using (SqlCommand cmd = conn.CreateCommand())
-                {
-                    cmd.CommandText = @"
-                                SELECT
-                                    Id, FirstName, LastName, SlackHandle
-                                FROM Student
-                                WHERE Id = @id";
-                    cmd.Parameters.Add(new SqlParameter("@id", id));
-                    SqlDataReader reader = cmd.ExecuteReader();
-
-                    Student student = null;
-
-                    if (reader.Read())
-                    {
-                        student = new Student
-                        {
-                            Id = reader.GetInt32(reader.GetOrdinal("Id")),
-                            FirstName = reader.GetString(reader.GetOrdinal("FirstName")),
-                            LastName = reader.GetString(reader.GetOrdinal("LastName")),
-                            SlackHandle = reader.GetString(reader.GetOrdinal("SlackHandle")),
-                        };
-                    }
-                    else /*if (student == null)*/
-                    {
-                        return NotFound($"Student with the id {id} was not found :(");
-                    }
-
-                    reader.Close();
-
-                    return Ok(student);
-                }
+            return Ok(student);
+            }
+            else
+            {
+                return NotFound($"Student with the id {id} was not found :(");
             }
         }
 
@@ -104,119 +56,34 @@ namespace StudentExercises.Controllers
         [HttpPost]
         public ActionResult<Student> Post([FromBody] Student student)
         {
-            using (SqlConnection conn = Connection)
-            {
-                conn.Open();
-                using (SqlCommand cmd = conn.CreateCommand())
-                {
-                    cmd.CommandText = @"INSERT INTO Student (FirstName, LastName, SlackHandle)
-                                                OUTPUT INSERTED.Id
-                                                VALUES (@firstName, @lastName, @slackHandle)";
-                    cmd.Parameters.Add(new SqlParameter("@firstName", student.FirstName));
-                    cmd.Parameters.Add(new SqlParameter("@lastName", student.LastName));
-                    cmd.Parameters.Add(new SqlParameter("@slackHandle", student.SlackHandle));
-
-                    int newId = (int)cmd.ExecuteScalar();
-                    student.Id = newId;
-                    return CreatedAtRoute("GetStudent", new { id = newId }, student);
-                }
-            }
+            var newStudent = new Repository(_config).AddStudent(student);
+            return Ok(newStudent);
         }
 
         [HttpPut("{id}")]
         public ActionResult<Student> Put([FromRoute] int id, [FromBody] Student student)
         {
-            try
-            {
-                using (SqlConnection conn = Connection)
-                {
-                    conn.Open();
-                    using (SqlCommand cmd = conn.CreateCommand())
-                    {
-                        cmd.CommandText = @"UPDATE Student
-                                                    SET FirstName = @firstName,
-                                                        LastName = @lastName,
-                                                        SlackHandle = @slackHandle
-                                                    WHERE Id = @id";
-                        cmd.Parameters.Add(new SqlParameter("@firstName", student.FirstName));
-                        cmd.Parameters.Add(new SqlParameter("@lastName", student.LastName));
-                        cmd.Parameters.Add(new SqlParameter("@slackHandle", student.SlackHandle));
-                        cmd.Parameters.Add(new SqlParameter("@id", id));
+            var updatedStudent = new Repository(_config).UpdateStudent(id, student);
 
-                        int rowsAffected = cmd.ExecuteNonQuery();
-                        if (rowsAffected > 0)
-                        {
-                            return new StatusCodeResult(StatusCodes.Status204NoContent);
-                        }
-                        throw new Exception("No rows affected");
-                    }
-                }
-            }
-            catch (Exception)
-            {
-                if (!StudentExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
+            return Ok(updatedStudent);
         }
 
         [HttpDelete("{id}")]
-        public ActionResult<Student> Delete([FromRoute] int id)
+        public ActionResult Delete([FromRoute] int id)
         {
-            try
-            {
-                using (SqlConnection conn = Connection)
-                {
-                    conn.Open();
-                    using (SqlCommand cmd = conn.CreateCommand())
-                    {
-                        cmd.CommandText = @"DELETE FROM Student WHERE Id = @id";
-                        cmd.Parameters.Add(new SqlParameter("@id", id));
+            new Repository(_config).DeleteStudent(id);
 
-                        int rowsAffected = cmd.ExecuteNonQuery();
-                        if (rowsAffected > 0)
-                        {
-                            return new StatusCodeResult(StatusCodes.Status204NoContent);
-                        }
-                        throw new Exception("No rows affected");
-                    }
-                }
-            }
-            catch (Exception)
-            {
-                if (!StudentExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
+            return Ok();
         }
 
-        private bool StudentExists(int id)
+        [HttpPost("{exerciseName}")]
+        public ActionResult Post([FromRoute] string exerciseName, [FromBody] Student student)
         {
-            using (SqlConnection conn = Connection)
-            {
-                conn.Open();
-                using (SqlCommand cmd = conn.CreateCommand())
-                {
-                    cmd.CommandText = @"
-                                SELECT Id, FirstName, LastName, SlackHandle
-                                FROM Student
-                                WHERE Id = @id";
-                    cmd.Parameters.Add(new SqlParameter("@id", id));
+            new Repository(_config).AddExerciseToStudent(student.FirstName, student.LastName, student.SlackHandle, exerciseName);
 
-                    SqlDataReader reader = cmd.ExecuteReader();
-                    return reader.Read();
-                }
-            }
+            return Ok();
         }
+
+
     }
 }
