@@ -492,5 +492,76 @@ namespace StudentExercises.Data
                 }
             }
         }
+
+
+
+        /************************************************************************************
+        * Add the following to your program:
+          Find all the students in the database.Include each student's cohort
+          AND each student's list of exercises.
+        ************************************************************************************/
+
+
+        public List<Student> GetStudentsWithCohortExercise()
+        {
+            var students = new List<Student>();
+
+            using (SqlConnection conn = Connection)
+            {
+                conn.Open();
+
+                using (SqlCommand cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = @"SELECT s.Id, s.FirstName, s.LastName, s.SlackHandle, c.CohortNum, e.ExName
+                                        FROM Student s
+                                        JOIN CohortInstructors ci
+                                        ON ci.InstructorId = s.Id
+                                        JOIN Cohort c
+                                        ON c.Id = ci.CohortId
+                                        JOIN StudentExercises se
+                                        ON s.Id = se.StudentId
+                                        JOIN Exercise e
+                                        ON e.Id = se.ExerciseId";
+
+                    SqlDataReader reader = cmd.ExecuteReader();
+
+                    while (reader.Read())
+                    {
+                        int idColumnPosition = reader.GetOrdinal("Id");
+                        int idValue = reader.GetInt32(idColumnPosition);
+
+                        var FirstName = reader.GetString(reader.GetOrdinal("FirstName"));
+                        var LastName = reader.GetString(reader.GetOrdinal("LastName"));
+                        var CohortNum = reader.GetInt32(reader.GetOrdinal("CohortNum"));
+                        var SlackHanlde = reader.GetString(reader.GetOrdinal("SlackHandle"));
+                        var ExName = reader.GetString(reader.GetOrdinal("ExName"));
+
+                        Student student = new Student
+                        {
+                            Id = idValue,
+                            FirstName = FirstName,
+                            LastName = LastName,
+                            SlackHandle = SlackHanlde,
+                            cohort = new Cohort { CohortNum = reader.GetInt32(reader.GetOrdinal("CohortNum")), CohortName = "Cohort " + reader.GetInt32(reader.GetOrdinal("CohortNum")) },
+                            exerciseList = new Exercise { ExName = reader.GetString(reader.GetOrdinal("ExName")) }
+                        };
+
+                        students.Add(student);
+                    }
+
+                    reader.Close();
+
+                    return students;
+                }
+            }
+        }
+
+        /************************************************************************************
+        * Write a method in the Repository class that accepts an Exercise and
+          a Cohort and assigns that exercise to each student in the cohort
+          IF and ONLY IF the student has not already been assigned the exercise.
+        ************************************************************************************/
+
+
     }
 }
