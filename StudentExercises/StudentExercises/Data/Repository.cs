@@ -543,8 +543,8 @@ namespace StudentExercises.Data
                             LastName = LastName,
                             SlackHandle = SlackHanlde,
                             cohort = new Cohort { CohortNum = reader.GetInt32(reader.GetOrdinal("CohortNum")), CohortName = "Cohort " + reader.GetInt32(reader.GetOrdinal("CohortNum")) },
-                            exerciseList = new Exercise { ExName = reader.GetString(reader.GetOrdinal("ExName")) }
-                        };
+							exerciseList = GetAllExercisesByStudentId(idValue)
+					};
 
                         students.Add(student);
                     }
