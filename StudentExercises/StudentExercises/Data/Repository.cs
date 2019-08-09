@@ -562,6 +562,31 @@ namespace StudentExercises.Data
           IF and ONLY IF the student has not already been assigned the exercise.
         ************************************************************************************/
 
+        public void AssignCohortExercises(int exerciseId, int cohortId)
+		{
+			using (SqlConnection conn = Connection)
+			{
+				conn.Open();
 
+				using (SqlCommand cmd = conn.CreateCommand())
+				{
+					cmd.CommandText = @"INSERT INTO StudentExercises
+                                        (StudentId, ExerciseId)
+                                        SELECT s.Id, @exerciseId
+                                        FROM Student s 
+                                        JOIN CohortStudents cs
+                                        ON cs.StudentId = s.Id
+                                        WHERE cs.CohortId = @cohortId 
+                                        AND s.Id NOT IN (SELECT StudentExercises.StudentId
+                                        FROM StudentExercises
+                                        WHERE StudentExercises.ExerciseId = @exerciseId)";
+
+					cmd.Parameters.Add(new SqlParameter("@exerciseId", exerciseId));
+					cmd.Parameters.Add(new SqlParameter("@cohortId", cohortId));
+
+					cmd.ExecuteScalar();
+				}
+			}
+		}
     }
 }

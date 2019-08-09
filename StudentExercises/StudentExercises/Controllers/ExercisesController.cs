@@ -41,5 +41,12 @@ namespace StudentExercises.Controllers
             return Ok();
         }
 
+        [HttpPost("{exerciseId}")]
+        public ActionResult Post([FromRoute] int exerciseId, [FromBody] Cohort cohort)
+        {
+            new Repository(_config).AssignCohortExercises(exerciseId, cohort.Id);
+            return Ok();
+        }
+
     }
 }
