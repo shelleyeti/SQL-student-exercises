@@ -21,9 +21,9 @@ namespace StudentExercises.Controllers
         }
 
         [HttpGet]
-        public ActionResult<List<Exercise>> Get()
+        public ActionResult<List<Exercise>> Get(string q, string _include, string active)
         {
-            var exercises = new Repository(_config).GetAllExercises();
+            var exercises = new Repository(_config).GetAllExercises(q, _include, active);
             return Ok(exercises);
         }
 

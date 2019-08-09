@@ -26,23 +26,31 @@ namespace StudentExercises.Data
 
         /************************************************************************************
         * Query the database for all the Exercises.
+        
+      
+        * Exercise JSON response should have all currently assigned students if the
+          include=students query string parameter is there.
         ************************************************************************************/
-        public List<Exercise> GetAllExercises()
+        public List<Exercise> GetAllExercises(string q, string _include, string active)
         {
-            var exercises = new List<Exercise>();
+            var studentList = new List<Student>();
 
             using (SqlConnection conn = Connection)
             {
                 conn.Open();
-
                 using (SqlCommand cmd = conn.CreateCommand())
                 {
                     cmd.CommandText = "SELECT Id, ExName, ExLanguage FROM Exercise";
 
+
                     SqlDataReader reader = cmd.ExecuteReader();
+                    List<Exercise> exercises = new List<Exercise>();
 
                     while (reader.Read())
                     {
+                        if (_include == "student")
+                            studentList = GetAllStudentsByExerciseId(reader.GetInt32(reader.GetOrdinal("Id")));
+
                         int idColumnPosition = reader.GetOrdinal("Id");
 
                         int idValue = reader.GetInt32(idColumnPosition);
@@ -54,7 +62,8 @@ namespace StudentExercises.Data
                         {
                             Id = idValue,
                             ExName = exName,
-                            ExLanguage = exLanguage
+                            ExLanguage = exLanguage,
+                            studentList = studentList
                         };
 
                         exercises.Add(exercise);
@@ -265,12 +274,15 @@ namespace StudentExercises.Data
             }
         }
 
-
         /************************************************************************************
-        * Additional Methods
+        * Student JSON response should have all exercises that are assigned to them if the
+        include=exercise query string parameter is there.
         ************************************************************************************/
-        public List<Student> GetAllStudent()
+
+        public List<Student> GetAllStudents(string q, string _include, string active)
         {
+            var exerciseList = new List<Exercise>();
+
             using (SqlConnection conn = Connection)
             {
                 conn.Open();
@@ -282,11 +294,15 @@ namespace StudentExercises.Data
                                         ON cs.StudentId = s.Id
                                         JOIN Cohort c
                                         ON cs.CohortId = c.Id";
+
                     SqlDataReader reader = cmd.ExecuteReader();
                     List<Student> students = new List<Student>();
 
                     while (reader.Read())
                     {
+                        if (_include == "exercise")
+                            exerciseList = GetAllExercisesByStudentId(reader.GetInt32(reader.GetOrdinal("Id")));
+
                         var student = new Student
                         {
                             Id = reader.GetInt32(reader.GetOrdinal("Id")),
@@ -294,7 +310,7 @@ namespace StudentExercises.Data
                             LastName = reader.GetString(reader.GetOrdinal("LastName")),
                             SlackHandle = reader.GetString(reader.GetOrdinal("SlackHandle")),
                             cohort = new Cohort { CohortNum = reader.GetInt32(reader.GetOrdinal("CohortNum")), CohortName = "Cohort " + reader.GetInt32(reader.GetOrdinal("CohortNum")) },
-                            exerciseList = GetAllExercisesByStudentId(reader.GetInt32(reader.GetOrdinal("Id")))
+                            exerciseList = exerciseList
                         };
 
                         students.Add(student);
@@ -305,6 +321,10 @@ namespace StudentExercises.Data
                 }
             }
         }
+
+        /************************************************************************************
+        * Additional Methods
+        ************************************************************************************/
 
         public Student GetOneStudent(int id)
         {
@@ -489,6 +509,53 @@ namespace StudentExercises.Data
 
                     SqlDataReader reader = cmd.ExecuteReader();
                     return reader.Read();
+                }
+            }
+        }
+
+        public List<Student> GetAllStudentsByExerciseId(int exerciseId)
+        {
+            var students = new List<Student>();
+
+            using (SqlConnection conn = Connection)
+            {
+                conn.Open();
+
+                using (SqlCommand cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = @"SELECT s.Id, s.FirstName, s.LastName
+                                        FROM Student s
+                                        JOIN StudentExercises se
+                                        ON se.StudentId = s.Id
+                                        WHERE se.ExerciseId = @ExerciseId";
+
+                    cmd.Parameters.Add(new SqlParameter("@ExerciseId", exerciseId));
+
+
+                    SqlDataReader reader = cmd.ExecuteReader();
+
+                    while (reader.Read())
+                    {
+                        int idColumnPosition = reader.GetOrdinal("Id");
+
+                        int idValue = reader.GetInt32(idColumnPosition);
+
+                        var FirstName = reader.GetString(reader.GetOrdinal("FirstName"));
+                        var LastName = reader.GetString(reader.GetOrdinal("LastName"));
+
+                        Student student = new Student
+                        {
+                            Id = idValue,
+                            FirstName = FirstName,
+                            LastName = LastName
+                        };
+
+                        students.Add(student);
+                    }
+
+                    reader.Close();
+
+                    return students;
                 }
             }
         }

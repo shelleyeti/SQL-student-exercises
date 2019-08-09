@@ -14,5 +14,6 @@ namespace StudentExercises.Models
         [StringLength(25)]
         public string ExLanguage { get; set; }
         public int Id { get; internal set; }
+        public List<Student> studentList { get; set; }
     }
 }
