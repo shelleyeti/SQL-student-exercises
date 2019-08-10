@@ -16,7 +16,7 @@ namespace StudentExercises.Models
         public string LastName { get; set; }
 
         [Required]
-        [StringLength(50)]
+        [StringLength(12, MinimumLength = 3)]
         public string SlackHandle { get; set; }
 
         public Instructor()
