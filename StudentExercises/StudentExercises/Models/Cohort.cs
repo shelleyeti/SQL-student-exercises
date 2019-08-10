@@ -12,6 +12,9 @@ namespace StudentExercises.Models
 
         [Required]
         public int CohortNum { get; set; }
+
+        [Required]
+        [StringLength(11, MinimumLength = 5)]
         public string CohortName { get; set; }
     }
 }
