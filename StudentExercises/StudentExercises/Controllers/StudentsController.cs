@@ -29,9 +29,9 @@ namespace StudentExercises.Controllers
         }
 
         [HttpGet]
-        public ActionResult<List<Student>> Get()
+        public ActionResult<List<Student>> Get([FromQuery] string q, string _include, string active)
         {
-            var students = new Repository(_config).GetAllStudent();
+            var students = new Repository(_config).GetAllStudents(q, _include, active);
 
             return Ok(students);     
         }
