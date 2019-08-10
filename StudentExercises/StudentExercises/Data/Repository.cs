@@ -26,8 +26,6 @@ namespace StudentExercises.Data
 
         /************************************************************************************
         * Query the database for all the Exercises.
-        
-      
         * Exercise JSON response should have all currently assigned students if the
           include=students query string parameter is there.
         ************************************************************************************/
@@ -37,11 +35,26 @@ namespace StudentExercises.Data
 
             using (SqlConnection conn = Connection)
             {
+
                 conn.Open();
                 using (SqlCommand cmd = conn.CreateCommand())
                 {
-                    cmd.CommandText = "SELECT Id, ExName, ExLanguage FROM Exercise";
+                    var filter = "";
 
+                    if (!string.IsNullOrEmpty(q))
+                    {
+                        filter = @" WHERE e.ExName
+                                        LIKE '%' + @filter + '%' 
+                                        OR e.ExLanguage
+                                        LIKE '%' + @filter + '%' ";
+                    }
+                    cmd.CommandText = @"SELECT Id, ExName, ExLanguage
+                                        FROM Exercise" + filter;
+
+                    if (!string.IsNullOrEmpty(q))
+                    {
+                        cmd.Parameters.Add(new SqlParameter("@filter", q));
+                    }
 
                     SqlDataReader reader = cmd.ExecuteReader();
                     List<Exercise> exercises = new List<Exercise>();
@@ -147,8 +160,13 @@ namespace StudentExercises.Data
 
         /************************************************************************************
         * Find all instructors in the database.Include each instructor's cohort.
+        * Provide support for each resource (Instructor, Student, Cohort, Exercise) and the q query string parameter.
+          If it is provided, your SQL should search relevant property for a match, search all properties of the resource for a match.
+            FirstName, LastName, and SlackHandle for instructors and students.
+            Name and Language for exercises.
+            Name for cohorts.
         ************************************************************************************/
-        public List<Instructor> GetInstructorsWithCohort()
+        public List<Instructor> GetInstructorsWithCohort(string q, string _include, string active)
         {
             var instructors = new List<Instructor>();
 
@@ -158,12 +176,29 @@ namespace StudentExercises.Data
 
                 using (SqlCommand cmd = conn.CreateCommand())
                 {
+                    var filter = "";
+
+                    if(!string.IsNullOrEmpty(q))
+                    {
+                        filter = @" WHERE i.FirstName
+                                    LIKE '%' + @filter + '%' 
+                                    OR i.LastName
+                                    LIKE '%' + @filter + '%' 
+                                    OR i.SlackHandle
+                                    LIKE '%' + @filter + '%' ";
+                    }
+
                     cmd.CommandText = @"SELECT i.Id, i.FirstName, i.LastName, c.CohortNum, i.SlackHandle
                                         FROM Instructor i
                                         JOIN CohortInstructors ci
                                         ON ci.InstructorId = i.Id
                                         JOIN Cohort c
-                                        ON c.Id = ci.CohortId";
+                                        ON c.Id = ci.CohortId" + filter;
+
+                    if (!string.IsNullOrEmpty(q))
+                    {
+                        cmd.Parameters.Add(new SqlParameter("@filter", q));
+                    }
 
                     SqlDataReader reader = cmd.ExecuteReader();
 
@@ -285,6 +320,17 @@ namespace StudentExercises.Data
 
             using (SqlConnection conn = Connection)
             {
+                var filter = "";
+
+                if (!string.IsNullOrEmpty(q))
+                {
+                    filter = @" WHERE s.FirstName
+                                    LIKE '%' + @filter + '%' 
+                                    OR s.LastName
+                                    LIKE '%' + @filter + '%' 
+                                    OR s.SlackHandle
+                                    LIKE '%' + @filter + '%' ";
+                }
                 conn.Open();
                 using (SqlCommand cmd = conn.CreateCommand())
                 {
@@ -293,8 +339,12 @@ namespace StudentExercises.Data
                                         JOIN CohortStudents cs
                                         ON cs.StudentId = s.Id
                                         JOIN Cohort c
-                                        ON cs.CohortId = c.Id";
+                                        ON cs.CohortId = c.Id" + filter;
 
+                    if (!string.IsNullOrEmpty(q))
+                    {
+                        cmd.Parameters.Add(new SqlParameter("@filter", q));
+                    }
                     SqlDataReader reader = cmd.ExecuteReader();
                     List<Student> students = new List<Student>();
 
@@ -325,7 +375,6 @@ namespace StudentExercises.Data
         /************************************************************************************
         * Additional Methods
         ************************************************************************************/
-
         public Student GetOneStudent(int id)
         {
             using (SqlConnection conn = Connection)
@@ -560,15 +609,56 @@ namespace StudentExercises.Data
             }
         }
 
+        public List<Cohort> GetAllCohorts(string q, string _include, string active)
+        {
+            var cohortList = new List<Cohort>();
 
+            using (SqlConnection conn = Connection)
+            {
+                var filter = "";
+
+                if (!string.IsNullOrEmpty(q))
+                {
+                    filter = @" WHERE CohortNum
+                                    LIKE '%' + @filter + '%' ";
+                }
+                conn.Open();
+                using (SqlCommand cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = @"SELECT Id, CohortNum
+                                        FROM Cohort" + filter;
+
+                    if (!string.IsNullOrEmpty(q))
+                    {
+                        cmd.Parameters.Add(new SqlParameter("@filter", q));
+                    }
+                    SqlDataReader reader = cmd.ExecuteReader();
+
+                    while (reader.Read())
+                    {
+
+                        var cohort = new Cohort
+                        {
+                            Id = reader.GetInt32(reader.GetOrdinal("Id")),
+                            CohortNum = reader.GetInt32(reader.GetOrdinal("CohortNum")),
+                            CohortName = "Cohort " + reader.GetInt32(reader.GetOrdinal("CohortNum"))
+                        };
+
+                        cohortList.Add(cohort);
+                    }
+                    reader.Close();
+
+                    return cohortList;
+                }
+            }
+
+        }
 
         /************************************************************************************
         * Add the following to your program:
           Find all the students in the database.Include each student's cohort
           AND each student's list of exercises.
         ************************************************************************************/
-
-
         public List<Student> GetStudentsWithCohortExercise()
         {
             var students = new List<Student>();
@@ -628,7 +718,6 @@ namespace StudentExercises.Data
           a Cohort and assigns that exercise to each student in the cohort
           IF and ONLY IF the student has not already been assigned the exercise.
         ************************************************************************************/
-
         public void AssignCohortExercises(int exerciseId, int cohortId)
 		{
 			using (SqlConnection conn = Connection)

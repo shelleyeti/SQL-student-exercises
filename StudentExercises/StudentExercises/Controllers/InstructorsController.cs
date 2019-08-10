@@ -22,9 +22,9 @@ namespace StudentExercises.Controllers
         }
 
         [HttpGet]
-        public ActionResult<List<Instructor>> Get()
+        public ActionResult<List<Instructor>> Get(string q, string _include, string active)
         {
-            var instructors = new Repository(_config).GetInstructorsWithCohort();
+            var instructors = new Repository(_config).GetInstructorsWithCohort(q, _include, active);
             return Ok(instructors);
         }
 
