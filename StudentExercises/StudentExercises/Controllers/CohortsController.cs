@@ -26,5 +26,43 @@ namespace StudentExercises.Controllers
             var cohorts = new Repository(_config).GetAllCohorts(q, _include, active);
             return Ok(cohorts);
         }
+
+        [HttpGet("{id}", Name = "GetCohort")]
+        public ActionResult<Student> Get([FromRoute] int id)
+        {
+            var cohort = new Repository(_config).GetOneCohort(id);
+
+            if (cohort.Id > 0)
+            {
+                return Ok(cohort);
+            }
+            else
+            {
+                return NotFound($"Cohort with the id {id} was not found :(");
+            }
+        }
+
+        [HttpPost]
+        public ActionResult<Cohort> Post([FromBody] Cohort cohort)
+        {
+            var newCohort = new Repository(_config).AddCohort(cohort);
+            return Ok(newCohort);
+        }
+
+        [HttpPut("{id}")]
+        public ActionResult<Cohort> Put([FromRoute] int id, [FromBody] Cohort cohort)
+        {
+            var updatedCohort = new Repository(_config).UpdateCohort(id, cohort);
+
+            return Ok(updatedCohort);
+        }
+
+        [HttpDelete("{id}")]
+        public ActionResult Delete([FromRoute] int id)
+        {
+            new Repository(_config).DeleteCohort(id);
+
+            return Ok();
+        }
     }
 }

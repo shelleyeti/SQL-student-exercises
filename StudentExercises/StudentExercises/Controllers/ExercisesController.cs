@@ -34,11 +34,26 @@ namespace StudentExercises.Controllers
             return Ok(exercises);
         }
 
+        //[HttpGet("{id}", Name = "GetOneExercise")]
+        //public ActionResult <Exercise> Get([FromRoute] int id)
+        //{
+        //    var exercises = new Repository(_config).GetOneExercise(id);
+        //    return Ok(exercises);
+        //}
+
         [HttpPost]
         public ActionResult Post([FromBody] Exercise exercise)
         {
             new Repository(_config).AddExercise(exercise.ExName, exercise.ExLanguage);
             return Ok();
+        }
+
+        [HttpPut("{id}")]
+        public ActionResult<Exercise> Put([FromRoute] int id, [FromBody] Exercise exercise)
+        {
+            var updatedExercise = new Repository(_config).UpdateExercise(id, exercise);
+
+            return Ok(updatedExercise);
         }
 
         [HttpPost("{exerciseId}")]
@@ -48,5 +63,12 @@ namespace StudentExercises.Controllers
             return Ok();
         }
 
+        [HttpDelete("{id}")]
+        public ActionResult Delete([FromRoute] int id)
+        {
+            new Repository(_config).DeleteExercise(id);
+
+            return Ok();
+        }
     }
 }

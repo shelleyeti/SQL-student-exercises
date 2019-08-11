@@ -16,4 +16,7 @@
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="2.2.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\StudentExercises\StudentExercises.csproj" />
+  </ItemGroup>
 </Project>

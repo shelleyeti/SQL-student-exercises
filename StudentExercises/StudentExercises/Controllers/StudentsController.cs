@@ -36,7 +36,6 @@ namespace StudentExercises.Controllers
             return Ok(students);     
         }
 
-
         [HttpGet("{id}", Name = "GetStudent")]
         public ActionResult<Student> Get([FromRoute] int id)
         {
@@ -51,7 +50,6 @@ namespace StudentExercises.Controllers
                 return NotFound($"Student with the id {id} was not found :(");
             }
         }
-
 
         [HttpPost]
         public ActionResult<Student> Post([FromBody] Student student)

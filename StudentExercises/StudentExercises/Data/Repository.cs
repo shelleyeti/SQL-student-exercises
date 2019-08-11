@@ -313,7 +313,6 @@ namespace StudentExercises.Data
         * Student JSON response should have all exercises that are assigned to them if the
         include=exercise query string parameter is there.
         ************************************************************************************/
-
         public List<Student> GetAllStudents(string q, string _include, string active)
         {
             var exerciseList = new List<Exercise>();
@@ -382,11 +381,9 @@ namespace StudentExercises.Data
                 conn.Open();
                 using (SqlCommand cmd = conn.CreateCommand())
                 {
-                    cmd.CommandText = @"
-                                SELECT
-                                    Id, FirstName, LastName, SlackHandle
-                                FROM Student
-                                WHERE Id = @id";
+                    cmd.CommandText = @"SELECT Id, FirstName, LastName, SlackHandle
+                                        FROM Student
+                                        WHERE Id = @id";
                     cmd.Parameters.Add(new SqlParameter("@id", id));
                     SqlDataReader reader = cmd.ExecuteReader();
 
@@ -399,7 +396,7 @@ namespace StudentExercises.Data
                             Id = reader.GetInt32(reader.GetOrdinal("Id")),
                             FirstName = reader.GetString(reader.GetOrdinal("FirstName")),
                             LastName = reader.GetString(reader.GetOrdinal("LastName")),
-                            SlackHandle = reader.GetString(reader.GetOrdinal("SlackHandle")),
+                            SlackHandle = reader.GetString(reader.GetOrdinal("SlackHandle"))
                         };
                     }
 
@@ -417,15 +414,23 @@ namespace StudentExercises.Data
                 conn.Open();
                 using (SqlCommand cmd = conn.CreateCommand())
                 {
-                    cmd.CommandText = @"INSERT INTO Student (FirstName, LastName, SlackHandle)
-                                                OUTPUT INSERTED.Id
-                                                VALUES (@firstName, @lastName, @slackHandle)";
+                    cmd.CommandText = @"DECLARE @TempStudent TABLE (Id int)
+                                        INSERT INTO Student (FirstName, LastName, SlackHandle)
+                                        OUTPUT INSERTED.Id INTO @TempStudent
+                                        VALUES (@firstName, @lastName, @slackHandle)
+
+                                        SELECT top 1 @OutputId = Id FROM @TempStudent";
+
+                    SqlParameter outPutId = new SqlParameter("@OutputId", SqlDbType.Int);
+                    outPutId.Direction = ParameterDirection.Output;
+                    cmd.Parameters.Add(outPutId);
+
                     cmd.Parameters.Add(new SqlParameter("@firstName", newStudent.FirstName));
                     cmd.Parameters.Add(new SqlParameter("@lastName", newStudent.LastName));
                     cmd.Parameters.Add(new SqlParameter("@slackHandle", newStudent.SlackHandle));
 
-                    int newId = (int)cmd.ExecuteScalar();
-                    newStudent.Id = newId;
+                    cmd.ExecuteScalar();
+                    newStudent.Id = (int)outPutId.Value;
                     return newStudent;
                 }
             }
@@ -441,18 +446,17 @@ namespace StudentExercises.Data
                     using (SqlCommand cmd = conn.CreateCommand())
                     {
                         cmd.CommandText = @"UPDATE Student
-                                                    SET FirstName = @firstName,
-                                                        LastName = @lastName,
-                                                        SlackHandle = @slackHandle
-                                                    WHERE Id = @id";
+                                            SET FirstName = @firstName,
+                                                LastName = @lastName,
+                                                SlackHandle = @slackHandle
+                                             WHERE Id = @id";
+
                         cmd.Parameters.Add(new SqlParameter("@firstName", student.FirstName));
                         cmd.Parameters.Add(new SqlParameter("@lastName", student.LastName));
                         cmd.Parameters.Add(new SqlParameter("@slackHandle", student.SlackHandle));
                         cmd.Parameters.Add(new SqlParameter("@id", id));
 
                         int rowsAffected = cmd.ExecuteNonQuery();
-
-                        throw new Exception("No rows affected");
                     }
                 }
             }
@@ -480,11 +484,6 @@ namespace StudentExercises.Data
                         cmd.Parameters.Add(new SqlParameter("@id", id));
 
                         int rowsAffected = cmd.ExecuteNonQuery();
-                        if (rowsAffected > 0)
-                        {
-                            //return new StatusCodeResult(StatusCodes.Status204NoContent);
-                        }
-                        throw new Exception("No rows affected");
                     }
                 }
             }
@@ -543,25 +542,6 @@ namespace StudentExercises.Data
             }
         }
 
-        private bool StudentExists(int id)
-        {
-            using (SqlConnection conn = Connection)
-            {
-                conn.Open();
-                using (SqlCommand cmd = conn.CreateCommand())
-                {
-                    cmd.CommandText = @"
-                                SELECT Id, FirstName, LastName, SlackHandle
-                                FROM Student
-                                WHERE Id = @id";
-                    cmd.Parameters.Add(new SqlParameter("@id", id));
-
-                    SqlDataReader reader = cmd.ExecuteReader();
-                    return reader.Read();
-                }
-            }
-        }
-
         public List<Student> GetAllStudentsByExerciseId(int exerciseId)
         {
             var students = new List<Student>();
@@ -609,6 +589,10 @@ namespace StudentExercises.Data
             }
         }
 
+
+        /************************************************************************************
+        * CRUD for Cohorts
+        ************************************************************************************/
         public List<Cohort> GetAllCohorts(string q, string _include, string active)
         {
             var cohortList = new List<Cohort>();
@@ -652,6 +636,344 @@ namespace StudentExercises.Data
                 }
             }
 
+        }
+
+        public Cohort GetOneCohort(int id)
+        {
+            using (SqlConnection conn = Connection)
+            {
+                conn.Open();
+                using (SqlCommand cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = @"SELECT Id, IsDayTime, CohortNum
+                                        FROM Cohort
+                                        WHERE Id = @id";
+                    cmd.Parameters.Add(new SqlParameter("@id", id));
+                    SqlDataReader reader = cmd.ExecuteReader();
+
+                    Cohort cohort = null;
+
+                    if (reader.Read())
+                    {
+                        cohort = new Cohort
+                        {
+                            Id = reader.GetInt32(reader.GetOrdinal("Id")),
+                            IsDayTime = reader.GetBoolean(reader.GetOrdinal("IsDayTime")),
+                            CohortNum = reader.GetInt32(reader.GetOrdinal("CohortNum"))
+                        };
+                    }
+
+                    reader.Close();
+
+                    return cohort;
+                }
+            }
+        }
+
+        public Cohort AddCohort(Cohort newCohort)
+        {
+            using (SqlConnection conn = Connection)
+            {
+                conn.Open();
+                using (SqlCommand cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = @"DECLARE @TempCohort TABLE (Id int)
+                                        INSERT INTO Cohort (IsDayTime, CohortNum)
+                                        OUTPUT INSERTED.Id INTO @TempCohort
+                                        VALUES (@isDayTime, @cohortNum)
+
+                                        SELECT top 1 @OutputId = Id FROM @TempCohort";
+
+                    SqlParameter outPutId = new SqlParameter("@OutputId", SqlDbType.Int);
+                    outPutId.Direction = ParameterDirection.Output;
+                    cmd.Parameters.Add(outPutId);
+
+                    cmd.Parameters.Add(new SqlParameter("@isDayTime", newCohort.IsDayTime));
+                    cmd.Parameters.Add(new SqlParameter("@cohortNum", newCohort.CohortNum));
+
+                    cmd.ExecuteScalar();
+                    newCohort.Id = (int)outPutId.Value;
+                    return newCohort;
+                }
+            }
+        }
+
+        public Cohort UpdateCohort(int id, Cohort cohort)
+        {
+            try
+            {
+                using (SqlConnection conn = Connection)
+                {
+                    conn.Open();
+                    using (SqlCommand cmd = conn.CreateCommand())
+                    {
+                        cmd.CommandText = @"UPDATE Cohort
+                                            SET IsDayTime = @isDayTime,
+                                                CohortNum = @cohortNum
+                                            WHERE Id = @id";
+                        cmd.Parameters.Add(new SqlParameter("@isDayTime", cohort.IsDayTime));
+                        cmd.Parameters.Add(new SqlParameter("@cohortNum", cohort.CohortNum));
+                        cmd.Parameters.Add(new SqlParameter("@id", id));
+
+                        int rowsAffected = cmd.ExecuteNonQuery();
+
+                        throw new Exception("No rows affected");
+                    }
+                }
+            }
+            catch (Exception)
+            {
+                if (!CohortExists(id))
+                {
+                    throw;
+                }
+            }
+
+            return cohort;
+        }
+
+        public void DeleteCohort(int id)
+        {
+            try
+            {
+                using (SqlConnection conn = Connection)
+                {
+                    conn.Open();
+                    using (SqlCommand cmd = conn.CreateCommand())
+                    {
+                        cmd.CommandText = @"DELETE FROM Cohort WHERE Id = @id";
+                        cmd.Parameters.Add(new SqlParameter("@id", id));
+
+                        int rowsAffected = cmd.ExecuteNonQuery();
+                    }
+                }
+            }
+            catch (Exception)
+            {
+                if (!CohortExists(id))
+                {
+                    throw;
+                }
+            }
+        }
+
+        /************************************************************************************
+        * CRUD for Instructors
+        ************************************************************************************/
+        public Instructor GetOneInstructor(int id)
+        {
+            using (SqlConnection conn = Connection)
+            {
+                conn.Open();
+                using (SqlCommand cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = @"SELECT Id, FirstName, LastName, SlackHandle
+                                        FROM Instructor
+                                        WHERE Id = @id";
+                    cmd.Parameters.Add(new SqlParameter("@id", id));
+                    SqlDataReader reader = cmd.ExecuteReader();
+
+                    Instructor instructor = null;
+
+                    if (reader.Read())
+                    {
+                        instructor = new Instructor
+                        {
+                            Id = reader.GetInt32(reader.GetOrdinal("Id")),
+                            FirstName = reader.GetString(reader.GetOrdinal("FirstName")),
+                            LastName = reader.GetString(reader.GetOrdinal("LastName")),
+                            SlackHandle = reader.GetString(reader.GetOrdinal("SlackHandle"))
+                        };
+                    }
+
+                    reader.Close();
+
+                    return instructor;
+                }
+            }
+        }
+
+        public Instructor UpdateInstructor(int id, Instructor instructor)
+        {
+            try
+            {
+                using (SqlConnection conn = Connection)
+                {
+                    conn.Open();
+                    using (SqlCommand cmd = conn.CreateCommand())
+                    {
+                        cmd.CommandText = @"UPDATE Instructor
+                                            SET FirstName = @firstName,
+                                                LastName = @lastName,
+                                                SlackHandle = @slackHandle
+                                             WHERE Id = @id";
+                        cmd.Parameters.Add(new SqlParameter("@firstName", instructor.FirstName));
+                        cmd.Parameters.Add(new SqlParameter("@lastName", instructor.LastName));
+                        cmd.Parameters.Add(new SqlParameter("@slackHandle", instructor.SlackHandle));
+                        cmd.Parameters.Add(new SqlParameter("@id", id));
+
+                        int rowsAffected = cmd.ExecuteNonQuery();
+
+                        throw new Exception("No rows affected");
+                    }
+                }
+            }
+            catch (Exception)
+            {
+                if (!InstructorExists(id))
+                {
+                    throw;
+                }
+            }
+
+            return instructor;
+        }
+
+        public void DeleteInstructor(int id)
+        {
+            try
+            {
+                using (SqlConnection conn = Connection)
+                {
+                    conn.Open();
+                    using (SqlCommand cmd = conn.CreateCommand())
+                    {
+                        cmd.CommandText = @"DELETE FROM Instructor WHERE Id = @id";
+                        cmd.Parameters.Add(new SqlParameter("@id", id));
+
+                        int rowsAffected = cmd.ExecuteNonQuery();
+                    }
+                }
+            }
+            catch (Exception)
+            {
+                if (!InstructorExists(id))
+                {
+                    throw;
+                }
+            }
+        }
+
+        /************************************************************************************
+        * CRUD for Exercises
+        ************************************************************************************/
+        public Exercise GetOneExercise(int id)
+        {
+            using (SqlConnection conn = Connection)
+            {
+                conn.Open();
+                using (SqlCommand cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = @"SELECT Id, ExName, ExLanguage
+                                        FROM Exercise
+                                        WHERE Id = @id";
+                    cmd.Parameters.Add(new SqlParameter("@id", id));
+                    SqlDataReader reader = cmd.ExecuteReader();
+
+                    Exercise exercise = null;
+
+                    if (reader.Read())
+                    {
+                        exercise = new Exercise
+                        {
+                            Id = reader.GetInt32(reader.GetOrdinal("Id")),
+                            ExName = reader.GetString(reader.GetOrdinal("ExName")),
+                            ExLanguage = reader.GetString(reader.GetOrdinal("ExLanguage"))
+                        };
+                    }
+
+                    reader.Close();
+
+                    return exercise;
+                }
+            }
+        }
+
+        public Exercise AddExercise(Exercise newExercise)
+        {
+            using (SqlConnection conn = Connection)
+            {
+                conn.Open();
+                using (SqlCommand cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = @"DECLARE @TempExercise TABLE (Id int)
+                                        INSERT INTO Exercise (ExName, ExLanguage)
+                                        OUTPUT INSERTED.Id INTO @TempExercise
+                                        VALUES (@exName, @exLanguage)
+
+                                        SELECT top 1 @OutputId = Id FROM @TempExercise";
+
+                    SqlParameter outPutId = new SqlParameter("@OutputId", SqlDbType.Int);
+                    outPutId.Direction = ParameterDirection.Output;
+                    cmd.Parameters.Add(outPutId);
+
+                    cmd.Parameters.Add(new SqlParameter("@exName", newExercise.ExName));
+                    cmd.Parameters.Add(new SqlParameter("@exLanguage", newExercise.ExLanguage));
+
+                    cmd.ExecuteScalar();
+                    newExercise.Id = (int)outPutId.Value;
+                    return newExercise;
+                }
+            }
+        }
+
+        public Exercise UpdateExercise(int id, Exercise exercise)
+        {
+            try
+            {
+                using (SqlConnection conn = Connection)
+                {
+                    conn.Open();
+                    using (SqlCommand cmd = conn.CreateCommand())
+                    {
+                        cmd.CommandText = @"UPDATE Exercise
+                                            SET ExName = @exName,
+                                                ExLanguage = @exLanguage
+                                            WHERE Id = @id";
+                        cmd.Parameters.Add(new SqlParameter("@exName", exercise.ExName));
+                        cmd.Parameters.Add(new SqlParameter("@exLanguage", exercise.ExLanguage));
+                        cmd.Parameters.Add(new SqlParameter("@id", id));
+
+                        int rowsAffected = cmd.ExecuteNonQuery();
+
+                        throw new Exception("No rows affected");
+                    }
+                }
+            }
+            catch (Exception)
+            {
+                if (!ExerciseExists(id))
+                {
+                    throw;
+                }
+            }
+
+            return exercise;
+        }
+
+        public void DeleteExercise(int id)
+        {
+            try
+            {
+                using (SqlConnection conn = Connection)
+                {
+                    conn.Open();
+                    using (SqlCommand cmd = conn.CreateCommand())
+                    {
+                        cmd.CommandText = @"DELETE FROM Exercise WHERE Id = @id";
+                        cmd.Parameters.Add(new SqlParameter("@id", id));
+
+                        int rowsAffected = cmd.ExecuteNonQuery();
+                    }
+                }
+            }
+            catch (Exception)
+            {
+                if (!ExerciseExists(id))
+                {
+                    throw;
+                }
+            }
         }
 
         /************************************************************************************
@@ -744,5 +1066,84 @@ namespace StudentExercises.Data
 				}
 			}
 		}
+
+        /************************************************************************************
+        * Private Methods
+        ************************************************************************************/
+        private bool StudentExists(int id)
+        {
+            using (SqlConnection conn = Connection)
+            {
+                conn.Open();
+                using (SqlCommand cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = @"
+                                SELECT Id, FirstName, LastName, SlackHandle
+                                FROM Student
+                                WHERE Id = @id";
+                    cmd.Parameters.Add(new SqlParameter("@id", id));
+
+                    SqlDataReader reader = cmd.ExecuteReader();
+                    return reader.Read();
+                }
+            }
+        }
+
+        private bool CohortExists(int id)
+        {
+            using (SqlConnection conn = Connection)
+            {
+                conn.Open();
+                using (SqlCommand cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = @"
+                                SELECT Id, IsDayTime, CohortNum
+                                FROM Cohort
+                                WHERE Id = @id";
+                    cmd.Parameters.Add(new SqlParameter("@id", id));
+
+                    SqlDataReader reader = cmd.ExecuteReader();
+                    return reader.Read();
+                }
+            }
+        }
+
+        private bool InstructorExists(int id)
+        {
+            using (SqlConnection conn = Connection)
+            {
+                conn.Open();
+                using (SqlCommand cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = @"
+                                SELECT Id, FirstName, LastName, SlackHandle
+                                FROM Instructor
+                                WHERE Id = @id";
+                    cmd.Parameters.Add(new SqlParameter("@id", id));
+
+                    SqlDataReader reader = cmd.ExecuteReader();
+                    return reader.Read();
+                }
+            }
+        }
+
+        private bool ExerciseExists(int id)
+        {
+            using (SqlConnection conn = Connection)
+            {
+                conn.Open();
+                using (SqlCommand cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = @"
+                                SELECT Id, ExName, ExLanguage
+                                FROM Exercise
+                                WHERE Id = @id";
+                    cmd.Parameters.Add(new SqlParameter("@id", id));
+
+                    SqlDataReader reader = cmd.ExecuteReader();
+                    return reader.Read();
+                }
+            }
+        }
     }
 }
