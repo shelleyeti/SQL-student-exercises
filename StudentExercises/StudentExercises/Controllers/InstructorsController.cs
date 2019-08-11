@@ -28,10 +28,41 @@ namespace StudentExercises.Controllers
             return Ok(instructors);
         }
 
+        [HttpGet("{id}", Name = "GetInstructor")]
+        public ActionResult<Instructor> Get([FromRoute] int id)
+        {
+            var instructor = new Repository(_config).GetOneInstructor(id);
+
+            if (instructor.Id > 0)
+            {
+                return Ok(instructor);
+            }
+            else
+            {
+                return NotFound($"Instructor with the id {id} was not found :(");
+            }
+        }
+
         [HttpPost]
         public ActionResult Post([FromBody] Instructor instructor)
         {
             new Repository(_config).InsertInstructorWithAssign(instructor.FirstName, instructor.LastName, instructor.SlackHandle, instructor.cohort.CohortNum);
+            return Ok();
+        }
+
+        [HttpPut("{id}")]
+        public ActionResult<Instructor> Put([FromRoute] int id, [FromBody] Instructor instructor)
+        {
+            var updatedInstructor = new Repository(_config).UpdateInstructor(id, instructor);
+
+            return Ok(updatedInstructor);
+        }
+
+        [HttpDelete("{id}")]
+        public ActionResult Delete([FromRoute] int id)
+        {
+            new Repository(_config).DeleteInstructor(id);
+
             return Ok();
         }
     }

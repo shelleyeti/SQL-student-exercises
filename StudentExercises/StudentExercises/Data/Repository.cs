@@ -396,7 +396,7 @@ namespace StudentExercises.Data
                             Id = reader.GetInt32(reader.GetOrdinal("Id")),
                             FirstName = reader.GetString(reader.GetOrdinal("FirstName")),
                             LastName = reader.GetString(reader.GetOrdinal("LastName")),
-                            SlackHandle = reader.GetString(reader.GetOrdinal("SlackHandle")),
+                            SlackHandle = reader.GetString(reader.GetOrdinal("SlackHandle"))
                         };
                     }
 
@@ -591,7 +591,7 @@ namespace StudentExercises.Data
 
 
         /************************************************************************************
-        * CRUD for Cohort
+        * CRUD for Cohorts
         ************************************************************************************/
         public List<Cohort> GetAllCohorts(string q, string _include, string active)
         {
@@ -708,9 +708,9 @@ namespace StudentExercises.Data
                     using (SqlCommand cmd = conn.CreateCommand())
                     {
                         cmd.CommandText = @"UPDATE Cohort
-                                                    SET IsDayTime = @isDayTime,
-                                                        CohortNum = @cohortNum
-                                                    WHERE Id = @id";
+                                            SET IsDayTime = @isDayTime,
+                                                CohortNum = @cohortNum
+                                            WHERE Id = @id";
                         cmd.Parameters.Add(new SqlParameter("@isDayTime", cohort.IsDayTime));
                         cmd.Parameters.Add(new SqlParameter("@cohortNum", cohort.CohortNum));
                         cmd.Parameters.Add(new SqlParameter("@id", id));
@@ -751,6 +751,103 @@ namespace StudentExercises.Data
             catch (Exception)
             {
                 if (!CohortExists(id))
+                {
+                    throw;
+                }
+            }
+        }
+
+        /************************************************************************************
+        * CRUD for Instructors
+        ************************************************************************************/
+        public Instructor GetOneInstructor(int id)
+        {
+            using (SqlConnection conn = Connection)
+            {
+                conn.Open();
+                using (SqlCommand cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = @"SELECT Id, FirstName, LastName, SlackHandle
+                                        FROM Instructor
+                                        WHERE Id = @id";
+                    cmd.Parameters.Add(new SqlParameter("@id", id));
+                    SqlDataReader reader = cmd.ExecuteReader();
+
+                    Instructor instructor = null;
+
+                    if (reader.Read())
+                    {
+                        instructor = new Instructor
+                        {
+                            Id = reader.GetInt32(reader.GetOrdinal("Id")),
+                            FirstName = reader.GetString(reader.GetOrdinal("FirstName")),
+                            LastName = reader.GetString(reader.GetOrdinal("LastName")),
+                            SlackHandle = reader.GetString(reader.GetOrdinal("SlackHandle"))
+                        };
+                    }
+
+                    reader.Close();
+
+                    return instructor;
+                }
+            }
+        }
+
+        public Instructor UpdateInstructor(int id, Instructor instructor)
+        {
+            try
+            {
+                using (SqlConnection conn = Connection)
+                {
+                    conn.Open();
+                    using (SqlCommand cmd = conn.CreateCommand())
+                    {
+                        cmd.CommandText = @"UPDATE Instructor
+                                            SET FirstName = @firstName,
+                                                LastName = @lastName,
+                                                SlackHandle = @slackHandle
+                                             WHERE Id = @id";
+                        cmd.Parameters.Add(new SqlParameter("@firstName", instructor.FirstName));
+                        cmd.Parameters.Add(new SqlParameter("@lastName", instructor.LastName));
+                        cmd.Parameters.Add(new SqlParameter("@slackHandle", instructor.SlackHandle));
+                        cmd.Parameters.Add(new SqlParameter("@id", id));
+
+                        int rowsAffected = cmd.ExecuteNonQuery();
+
+                        throw new Exception("No rows affected");
+                    }
+                }
+            }
+            catch (Exception)
+            {
+                if (!InstructorExists(id))
+                {
+                    throw;
+                }
+            }
+
+            return instructor;
+        }
+
+        public void DeleteInstructor(int id)
+        {
+            try
+            {
+                using (SqlConnection conn = Connection)
+                {
+                    conn.Open();
+                    using (SqlCommand cmd = conn.CreateCommand())
+                    {
+                        cmd.CommandText = @"DELETE FROM Instructor WHERE Id = @id";
+                        cmd.Parameters.Add(new SqlParameter("@id", id));
+
+                        int rowsAffected = cmd.ExecuteNonQuery();
+                    }
+                }
+            }
+            catch (Exception)
+            {
+                if (!InstructorExists(id))
                 {
                     throw;
                 }
@@ -888,5 +985,25 @@ namespace StudentExercises.Data
                 }
             }
         }
+
+        private bool InstructorExists(int id)
+        {
+            using (SqlConnection conn = Connection)
+            {
+                conn.Open();
+                using (SqlCommand cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = @"
+                                SELECT Id, FirstName, LastName, SlackHandle
+                                FROM Instructor
+                                WHERE Id = @id";
+                    cmd.Parameters.Add(new SqlParameter("@id", id));
+
+                    SqlDataReader reader = cmd.ExecuteReader();
+                    return reader.Read();
+                }
+            }
+        }
+
     }
 }
