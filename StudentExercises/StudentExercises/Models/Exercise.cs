@@ -13,7 +13,7 @@ namespace StudentExercises.Models
         [Required]
         [StringLength(25)]
         public string ExLanguage { get; set; }
-        public int Id { get; internal set; }
+        public int Id { get; set; }
         public List<Student> studentList { get; set; }
     }
 }

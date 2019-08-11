@@ -855,6 +855,128 @@ namespace StudentExercises.Data
         }
 
         /************************************************************************************
+        * CRUD for Exercises
+        ************************************************************************************/
+        public Exercise GetOneExercise(int id)
+        {
+            using (SqlConnection conn = Connection)
+            {
+                conn.Open();
+                using (SqlCommand cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = @"SELECT Id, ExName, ExLanguage
+                                        FROM Exercise
+                                        WHERE Id = @id";
+                    cmd.Parameters.Add(new SqlParameter("@id", id));
+                    SqlDataReader reader = cmd.ExecuteReader();
+
+                    Exercise exercise = null;
+
+                    if (reader.Read())
+                    {
+                        exercise = new Exercise
+                        {
+                            Id = reader.GetInt32(reader.GetOrdinal("Id")),
+                            ExName = reader.GetString(reader.GetOrdinal("ExName")),
+                            ExLanguage = reader.GetString(reader.GetOrdinal("ExLanguage"))
+                        };
+                    }
+
+                    reader.Close();
+
+                    return exercise;
+                }
+            }
+        }
+
+        public Exercise AddExercise(Exercise newExercise)
+        {
+            using (SqlConnection conn = Connection)
+            {
+                conn.Open();
+                using (SqlCommand cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = @"DECLARE @TempExercise TABLE (Id int)
+                                        INSERT INTO Exercise (ExName, ExLanguage)
+                                        OUTPUT INSERTED.Id INTO @TempExercise
+                                        VALUES (@exName, @exLanguage)
+
+                                        SELECT top 1 @OutputId = Id FROM @TempExercise";
+
+                    SqlParameter outPutId = new SqlParameter("@OutputId", SqlDbType.Int);
+                    outPutId.Direction = ParameterDirection.Output;
+                    cmd.Parameters.Add(outPutId);
+
+                    cmd.Parameters.Add(new SqlParameter("@exName", newExercise.ExName));
+                    cmd.Parameters.Add(new SqlParameter("@exLanguage", newExercise.ExLanguage));
+
+                    cmd.ExecuteScalar();
+                    newExercise.Id = (int)outPutId.Value;
+                    return newExercise;
+                }
+            }
+        }
+
+        public Exercise UpdateExercise(int id, Exercise exercise)
+        {
+            try
+            {
+                using (SqlConnection conn = Connection)
+                {
+                    conn.Open();
+                    using (SqlCommand cmd = conn.CreateCommand())
+                    {
+                        cmd.CommandText = @"UPDATE Exercise
+                                            SET ExName = @exName,
+                                                ExLanguage = @exLanguage
+                                            WHERE Id = @id";
+                        cmd.Parameters.Add(new SqlParameter("@exName", exercise.ExName));
+                        cmd.Parameters.Add(new SqlParameter("@exLanguage", exercise.ExLanguage));
+                        cmd.Parameters.Add(new SqlParameter("@id", id));
+
+                        int rowsAffected = cmd.ExecuteNonQuery();
+
+                        throw new Exception("No rows affected");
+                    }
+                }
+            }
+            catch (Exception)
+            {
+                if (!ExerciseExists(id))
+                {
+                    throw;
+                }
+            }
+
+            return exercise;
+        }
+
+        public void DeleteExercise(int id)
+        {
+            try
+            {
+                using (SqlConnection conn = Connection)
+                {
+                    conn.Open();
+                    using (SqlCommand cmd = conn.CreateCommand())
+                    {
+                        cmd.CommandText = @"DELETE FROM Exercise WHERE Id = @id";
+                        cmd.Parameters.Add(new SqlParameter("@id", id));
+
+                        int rowsAffected = cmd.ExecuteNonQuery();
+                    }
+                }
+            }
+            catch (Exception)
+            {
+                if (!ExerciseExists(id))
+                {
+                    throw;
+                }
+            }
+        }
+
+        /************************************************************************************
         * Add the following to your program:
           Find all the students in the database.Include each student's cohort
           AND each student's list of exercises.
@@ -1005,5 +1127,23 @@ namespace StudentExercises.Data
             }
         }
 
+        private bool ExerciseExists(int id)
+        {
+            using (SqlConnection conn = Connection)
+            {
+                conn.Open();
+                using (SqlCommand cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = @"
+                                SELECT Id, ExName, ExLanguage
+                                FROM Exercise
+                                WHERE Id = @id";
+                    cmd.Parameters.Add(new SqlParameter("@id", id));
+
+                    SqlDataReader reader = cmd.ExecuteReader();
+                    return reader.Read();
+                }
+            }
+        }
     }
 }

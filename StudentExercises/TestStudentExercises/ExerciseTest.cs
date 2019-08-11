@@ -10,10 +10,10 @@ using System.Text;
 
 namespace TestStudentExercises
 {
-    public class TestStudent
+    public class TestExercise
     {
         [Fact]
-        public async Task Test_Get_All_Students()
+        public async Task Test_Get_All_Exercises()
         {
             using (var client = new APIClientProvider().Client)
             {
@@ -25,22 +25,22 @@ namespace TestStudentExercises
                 /*
                     ACT
                 */
-                var response = await client.GetAsync("/api/students");
+                var response = await client.GetAsync("/api/exercises");
 
 
                 string responseBody = await response.Content.ReadAsStringAsync();
-                var students = JsonConvert.DeserializeObject<List<Student>>(responseBody);
+                var exercises = JsonConvert.DeserializeObject<List<Exercise>>(responseBody);
 
                 /*
                     ASSERT
                 */
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-                Assert.True(students.Count > 0);
+                Assert.True(exercises.Count > 0);
             }
         }
 
         [Fact]
-        public async Task Test_Get_One_Student()
+        public async Task Test_Get_One_Exercise()
         {
             using (var client = new APIClientProvider().Client)
             {
@@ -52,28 +52,28 @@ namespace TestStudentExercises
                 /*
                     ACT
                 */
-                var responseWithAllStudents = await client.GetAsync("/api/students");
+                var responseWithAllExercises = await client.GetAsync("/api/exercises");
 
 
-                string responseBodyWithAllStudents = await responseWithAllStudents.Content.ReadAsStringAsync();
-                var allStudents = JsonConvert.DeserializeObject<List<Cohort>>(responseBodyWithAllStudents);
+                string responseBodyWithAllExercises = await responseWithAllExercises.Content.ReadAsStringAsync();
+                var allExercises = JsonConvert.DeserializeObject<List<Exercise>>(responseBodyWithAllExercises);
 
 
-                var response = await client.GetAsync("/api/students/" + allStudents.First().Id);
+                var response = await client.GetAsync("/api/exercises/" + allExercises.First().Id);
 
                 string responseBody = await response.Content.ReadAsStringAsync();
-                var student = JsonConvert.DeserializeObject<Student>(responseBody);
+                var exercise = JsonConvert.DeserializeObject<Exercise>(responseBody);
 
                 /*
                     ASSERT
                 */
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-                Assert.True(student.Id > 0);
+                Assert.True(exercise.Id > 0);
             }
         }
 
         [Fact]
-        public async Task Test_Add_One_Student()
+        public async Task Test_Add_One_Exercise()
         {
             using (var client = new APIClientProvider().Client)
             {
@@ -81,37 +81,32 @@ namespace TestStudentExercises
                     ARRANGE
                 */
 
-                var newStudent = new Student
+                var newExercise = new Exercise
                 {
-                    FirstName = "ImOK",
-                    LastName = "ThisIsFine",
-                    SlackHandle = "tedious"
+                    ExName = "Testing",
+                    ExLanguage = "C#"
                 };
 
-                var newStudentAsJSON = JsonConvert.SerializeObject(newStudent);
+                var newExerciseAsJSON = JsonConvert.SerializeObject(newExercise);
 
                 /*
                     ACT
                 */
                 var response = await client.PostAsync(
-                    "/api/students",
-                    new StringContent(newStudentAsJSON, Encoding.UTF8, "application/json")
+                    "/api/exercises",
+                    new StringContent(newExerciseAsJSON, Encoding.UTF8, "application/json")
                 );
 
-                string responseBody = await response.Content.ReadAsStringAsync();
-
-                var newStudentReturned = JsonConvert.DeserializeObject<Student>(responseBody);
 
                 /*
                     ASSERT
                 */
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-                Assert.True(newStudentReturned.Id > 0);
             }
         }
 
         [Fact]
-        public async Task Test_Update_One_Student()
+        public async Task Test_Update_One_Exercise()
         {
             using (var client = new APIClientProvider().Client)
             {
@@ -119,23 +114,22 @@ namespace TestStudentExercises
                     ARRANGE
                 */
 
-                string newName = "Cry_Face";
+                string newName = "fingers bleed";
 
-                var newStudent = new Student
+                var newExercise = new Exercise
                 {
-                    FirstName = newName,
-                    LastName = "ThisIsFine",
-                    SlackHandle = "tedious"
+                    ExName = newName,
+                    ExLanguage = "C#"
                 };
 
-                var newStudentAsJSON = JsonConvert.SerializeObject(newStudent);
+                var newExerciseAsJSON = JsonConvert.SerializeObject(newExercise);
 
                 /*
                     ACT
                 */
                 var response = await client.PutAsync(
-                    "/api/students/8",
-                    new StringContent(newStudentAsJSON, Encoding.UTF8, "application/json")
+                    "/api/exercises/8",
+                    new StringContent(newExerciseAsJSON, Encoding.UTF8, "application/json")
                 );
 
                 /*
@@ -146,7 +140,7 @@ namespace TestStudentExercises
         }
 
         [Fact]
-        public async Task Test_Delete_One_Student()
+        public async Task Test_Delete_One_Exercise()
         {
             using (var client = new APIClientProvider().Client)
             {
@@ -158,7 +152,7 @@ namespace TestStudentExercises
                     ACT
                 */
                 var response = await client.DeleteAsync(
-                    "/api/students/6"
+                    "/api/exercises/6"
                 );
 
                 /*
