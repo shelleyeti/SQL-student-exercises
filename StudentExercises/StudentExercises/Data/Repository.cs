@@ -414,7 +414,7 @@ namespace StudentExercises.Data
                 conn.Open();
                 using (SqlCommand cmd = conn.CreateCommand())
                 {
-                    cmd.CommandText = @"DECLARE @TempStudent TABLE(Id int)
+                    cmd.CommandText = @"DECLARE @TempStudent TABLE (Id int)
                                         INSERT INTO Student (FirstName, LastName, SlackHandle)
                                         OUTPUT INSERTED.Id INTO @TempStudent
                                         VALUES (@firstName, @lastName, @slackHandle)
@@ -446,18 +446,17 @@ namespace StudentExercises.Data
                     using (SqlCommand cmd = conn.CreateCommand())
                     {
                         cmd.CommandText = @"UPDATE Student
-                                                    SET FirstName = @firstName,
-                                                        LastName = @lastName,
-                                                        SlackHandle = @slackHandle
-                                                    WHERE Id = @id";
+                                            SET FirstName = @firstName,
+                                                LastName = @lastName,
+                                                SlackHandle = @slackHandle
+                                             WHERE Id = @id";
+
                         cmd.Parameters.Add(new SqlParameter("@firstName", student.FirstName));
                         cmd.Parameters.Add(new SqlParameter("@lastName", student.LastName));
                         cmd.Parameters.Add(new SqlParameter("@slackHandle", student.SlackHandle));
                         cmd.Parameters.Add(new SqlParameter("@id", id));
 
                         int rowsAffected = cmd.ExecuteNonQuery();
-
-                        throw new Exception("No rows affected");
                     }
                 }
             }
